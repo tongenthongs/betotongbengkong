@@ -33,23 +33,95 @@ import {
   Edit2,
   PlusCircle,
   RotateCcw,
-  LogOut
+  LogOut,
+  Megaphone,
+  Bell,
+  Volume2,
+  CheckCircle2,
+  Star
 } from 'lucide-react';
 
 // Interfaces for our state and items
+interface Category {
+  id: string;
+  name: string;
+  desc: string;
+  badge: string;
+  category: string;
+  comingSoon?: boolean;
+  icon?: string;
+}
+
 interface PricelistItem {
   id: string;
   name: string;
   price: number;
-  category: 'joki' | 'gift';
-  subcategory: 'dds' | 'cdid' | 'gamepass-reguler' | 'gamepass-kilat';
+  category: string;
+  subcategory: string;
   popular?: boolean;
+  notAvailable?: boolean;
 }
+
+interface ServiceType {
+  id: string;
+  name: string;
+}
+
+const DEFAULT_SERVICE_TYPES: ServiceType[] = [
+  { id: 'joki', name: 'Joki' },
+  { id: 'gift', name: 'Gift' }
+];
+
+const ICON_MAP: Record<string, any> = {
+  flame: Flame,
+  car: Car,
+  sparkles: Sparkles,
+  zap: Zap,
+  star: Star,
+  sliders: Sliders,
+  bus: Bus,
+  gamepad: Gamepad2,
+  award: Award,
+  trending: TrendingUp,
+  users: Users,
+  payment: CreditCard,
+  shield: ShieldCheck,
+  megaphone: Megaphone,
+  bell: Bell,
+  volume: Volume2,
+  check: CheckCircle2
+};
+
+const ICON_TEMPLATES = [
+  { id: 'flame', label: 'Flame (Hype/Hot)' },
+  { id: 'car', label: 'Car (Racing)' },
+  { id: 'sparkles', label: 'Sparkles (Magic)' },
+  { id: 'zap', label: 'Zap (Fast)' },
+  { id: 'star', label: 'Star (Promo)' },
+  { id: 'sliders', label: 'Sliders (Tuning)' },
+  { id: 'bus', label: 'Bus (Explore)' },
+  { id: 'gamepad', label: 'Gamepad (Play)' },
+  { id: 'award', label: 'Award (Pro)' },
+  { id: 'trending', label: 'Trending (Booster)' },
+  { id: 'users', label: 'Users (Co-op)' },
+  { id: 'payment', label: 'Card (Top Up)' },
+  { id: 'shield', label: 'Shield (Aman)' }
+];
 
 interface CartItem {
   item: PricelistItem;
   quantity: number;
 }
+
+const DEFAULT_SUBCATEGORIES: Category[] = [
+  { id: 'dds', name: 'Drag Drive Simulator', desc: 'Joki Roblox', badge: 'Aman & Murah', category: 'joki', icon: 'flame' },
+  { id: 'cdid', name: 'Car Driving Indonesia', desc: 'Joki Roblox', badge: 'Terlaris', category: 'joki', icon: 'car' },
+  { id: 'gamepass-reguler', name: 'GamePass DDS Reguler', desc: 'Gift In-Game', badge: 'Proses 12-19', category: 'gift', icon: 'sparkles' },
+  { id: 'gamepass-kilat', name: 'GamePass DDS Kilat', desc: 'Gift In-Game', badge: 'Buka 24 Jam', category: 'gift', icon: 'zap' },
+  { id: 'gamepass-cdid', name: 'GamePass CDID', desc: 'Gift In-Game', badge: 'Koin Instan', category: 'gift', icon: 'star' },
+  { id: 'driving-empire', name: 'Driving Empire', desc: 'Joki Roblox', badge: 'Soon', category: 'joki', comingSoon: true, icon: 'sliders' },
+  { id: 'bus-explore', name: 'Bus Explore Indonesia', desc: 'Joki Roblox', badge: 'Soon', category: 'joki', comingSoon: true, icon: 'bus' }
+];
 
 const INITIAL_ITEMS: PricelistItem[] = [
   // JOKI ROBLOX - Drag Drive Simulator (DDS)
@@ -102,6 +174,14 @@ const INITIAL_ITEMS: PricelistItem[] = [
   { id: 'kilat-300m-cash', name: '300 Juta Cash [Kilat]', price: 30000, category: 'gift', subcategory: 'gamepass-kilat' },
   { id: 'kilat-500m-cash', name: '500 Juta Cash [Kilat]', price: 55000, category: 'gift', subcategory: 'gamepass-kilat' },
   { id: 'kilat-1b-cash', name: '1 Miliar Cash [Kilat]', price: 110000, category: 'gift', subcategory: 'gamepass-kilat' },
+
+  // GAMEPASS CDID (subcategory: 'gamepass-cdid')
+  { id: 'gp-cdid-10b', name: '10 Miliar Cash [GamePass CDID]', price: 15000, category: 'gift', subcategory: 'gamepass-cdid' },
+  { id: 'gp-cdid-20b', name: '20 Miliar Cash [GamePass CDID]', price: 20000, category: 'gift', subcategory: 'gamepass-cdid' },
+  { id: 'gp-cdid-50b', name: '50 Miliar Cash [GamePass CDID]', price: 30000, category: 'gift', subcategory: 'gamepass-cdid' },
+  { id: 'gp-cdid-100b', name: '100 Miliar Cash [GamePass CDID]', price: 50000, category: 'gift', subcategory: 'gamepass-cdid', popular: true },
+  { id: 'gp-cdid-200b', name: '200 Miliar Cash [GamePass CDID]', price: 100000, category: 'gift', subcategory: 'gamepass-cdid' },
+  { id: 'gp-cdid-400b', name: '400 Miliar Cash [GamePass CDID]', price: 200000, category: 'gift', subcategory: 'gamepass-cdid' },
 ];
 
 export default function App() {
@@ -173,11 +253,89 @@ export default function App() {
     price: 0,
     category: 'gift',
     subcategory: 'gamepass-kilat',
-    popular: false
+    popular: false,
+    notAvailable: false
+  });
+
+  // Announcement and Popup states
+  const [announcement, setAnnouncement] = useState<string>(() => {
+    return localStorage.getItem('sientong_announcement') || '🔥 PROMO SPESIAL: Jasa Joki Roblox Tercepat & Termurah se-Indonesia! Silakan pilih layanan terbaik kami.';
+  });
+  const [popupTitle, setPopupTitle] = useState<string>(() => {
+    return localStorage.getItem('sientong_popup_title') || '📢 PENGUMUMAN SIENTONG STORE';
+  });
+  const [popupMessage, setPopupMessage] = useState<string>(() => {
+    return localStorage.getItem('sientong_popup_message') || 'Selamat datang di Sientong Store! Kami aktif memproses pesanan setiap hari. Pengerjaan joki dilakukan secepatnya setelah pembayaran berhasil dikonfirmasi ke admin Instagram kami.';
+  });
+  const [isPopupEnabled, setIsPopupEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('sientong_popup_enabled') !== 'false';
+  });
+  const [showPopup, setShowPopup] = useState<boolean>(() => {
+    return sessionStorage.getItem('sientong_popup_closed') !== 'true';
+  });
+  const [isAnnounceSettingsOpen, setIsAnnounceSettingsOpen] = useState(false);
+  
+  // Temp form states for managing announcement/popup in admin panel
+  const [tempAnn, setTempAnn] = useState('');
+  const [tempPopupTitle, setTempPopupTitle] = useState('');
+  const [tempPopupMsg, setTempPopupMsg] = useState('');
+  const [tempPopupEnabled, setTempPopupEnabled] = useState(true);
+
+  const [subcategories, setSubcategories] = useState<Category[]>(() => {
+    const saved = localStorage.getItem('sientong_store_subcategories');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse subcategories, using defaults:', e);
+      }
+    }
+    return DEFAULT_SUBCATEGORIES;
+  });
+
+  const saveSubcategories = (newCats: Category[]) => {
+    setSubcategories(newCats);
+    localStorage.setItem('sientong_store_subcategories', JSON.stringify(newCats));
+  };
+
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+  const [adminCatTab, setAdminCatTab] = useState<'categories' | 'servicetypes'>('categories');
+  
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(() => {
+    const saved = localStorage.getItem('sientong_store_service_types');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse service types, using defaults:', e);
+      }
+    }
+    return DEFAULT_SERVICE_TYPES;
+  });
+
+  const saveServiceTypes = (newTypes: ServiceType[]) => {
+    setServiceTypes(newTypes);
+    localStorage.setItem('sientong_store_service_types', JSON.stringify(newTypes));
+  };
+
+  const [newServiceType, setNewServiceType] = useState<Partial<ServiceType>>({
+    id: '',
+    name: ''
+  });
+
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [newCategory, setNewCategory] = useState<Partial<Category>>({
+    id: '',
+    name: '',
+    desc: 'Joki Roblox',
+    badge: 'Aman & Murah',
+    category: 'joki',
+    comingSoon: false,
+    icon: 'flame'
   });
 
   // States
-  const [selectedSub, setSelectedSub] = useState<'dds' | 'cdid' | 'gamepass-reguler' | 'gamepass-kilat' | 'driving-empire' | 'bus-explore'>('dds');
+  const [selectedSub, setSelectedSub] = useState<string>('dds');
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -231,6 +389,21 @@ export default function App() {
     setEditingItem(null);
   };
 
+  const handleSaveAnnounceSettings = (e: FormEvent) => {
+    e.preventDefault();
+    setAnnouncement(tempAnn);
+    setPopupTitle(tempPopupTitle);
+    setPopupMessage(tempPopupMsg);
+    setIsPopupEnabled(tempPopupEnabled);
+
+    localStorage.setItem('sientong_announcement', tempAnn);
+    localStorage.setItem('sientong_popup_title', tempPopupTitle);
+    localStorage.setItem('sientong_popup_message', tempPopupMsg);
+    localStorage.setItem('sientong_popup_enabled', String(tempPopupEnabled));
+
+    setIsAnnounceSettingsOpen(false);
+  };
+
   const handleAddNewItem = (e: FormEvent) => {
     e.preventDefault();
     if (!newItem.id || !newItem.name || newItem.price === undefined || newItem.price <= 0) {
@@ -243,7 +416,8 @@ export default function App() {
       price: Number(newItem.price),
       category: newItem.category as 'joki' | 'gift',
       subcategory: newItem.subcategory as any,
-      popular: !!newItem.popular
+      popular: !!newItem.popular,
+      notAvailable: !!newItem.notAvailable
     };
     
     // Check if ID already exists
@@ -261,17 +435,127 @@ export default function App() {
       price: 0,
       category: 'gift',
       subcategory: 'gamepass-kilat',
-      popular: false
+      popular: false,
+      notAvailable: false
     });
+  };
+
+  const handleAddNewServiceType = (e: FormEvent) => {
+    e.preventDefault();
+    if (!newServiceType.id || !newServiceType.name) {
+      triggerWarning('ID dan Nama tipe layanan harus diisi.');
+      return;
+    }
+    const cleanId = newServiceType.id.toLowerCase().replace(/\s+/g, '-').trim();
+    if (serviceTypes.some(t => t.id === cleanId)) {
+      triggerWarning('ID tipe layanan sudah digunakan!');
+      return;
+    }
+
+    const typeToAdd: ServiceType = {
+      id: cleanId,
+      name: newServiceType.name.trim()
+    };
+
+    const updated = [...serviceTypes, typeToAdd];
+    saveServiceTypes(updated);
+    setNewServiceType({
+      id: '',
+      name: ''
+    });
+    triggerWarning(`Tipe layanan ${typeToAdd.name} berhasil ditambahkan.`);
+  };
+
+  const handleDeleteServiceType = (typeId: string) => {
+    if (typeId === 'joki' || typeId === 'gift') {
+      triggerWarning('Tipe layanan bawaan (Joki & Gift) tidak boleh dihapus.');
+      return;
+    }
+    if (confirm('Apakah Anda yakin ingin menghapus tipe layanan ini? Kategori yang menggunakan tipe layanan ini akan tetap ada, tapi disarankan untuk mengubahnya.')) {
+      const updated = serviceTypes.filter(t => t.id !== typeId);
+      saveServiceTypes(updated);
+      triggerWarning('Tipe layanan berhasil dihapus.');
+    }
+  };
+
+  const handleAddNewCategory = (e: FormEvent) => {
+    e.preventDefault();
+    if (!newCategory.id || !newCategory.name || !newCategory.desc) {
+      triggerWarning('ID, nama, dan deskripsi kategori harus diisi.');
+      return;
+    }
+    const cleanId = newCategory.id.toLowerCase().replace(/\s+/g, '-').trim();
+    if (subcategories.some(c => c.id === cleanId)) {
+      triggerWarning('ID Kategori sudah digunakan!');
+      return;
+    }
+
+    const catToAdd: Category = {
+      id: cleanId,
+      name: newCategory.name.trim(),
+      desc: newCategory.desc.trim(),
+      badge: (newCategory.badge || 'Aman & Murah').trim(),
+      category: newCategory.category || 'joki',
+      comingSoon: !!newCategory.comingSoon,
+      icon: newCategory.icon || 'flame'
+    };
+
+    const updated = [...subcategories, catToAdd];
+    saveSubcategories(updated);
+    setNewCategory({
+      id: '',
+      name: '',
+      desc: 'Joki Roblox',
+      badge: 'Aman & Murah',
+      category: 'joki',
+      comingSoon: false,
+      icon: 'flame'
+    });
+    triggerWarning(`Kategori ${catToAdd.name} berhasil ditambahkan.`);
+  };
+
+  const handleSaveEditedCategory = (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory) return;
+    if (!editingCategory.name || !editingCategory.desc) {
+      triggerWarning('Nama dan deskripsi kategori harus diisi.');
+      return;
+    }
+
+    const updated = subcategories.map(c => c.id === editingCategory.id ? editingCategory : c);
+    saveSubcategories(updated);
+    setEditingCategory(null);
+    triggerWarning('Kategori berhasil diperbarui.');
+  };
+
+  const handleDeleteCategory = (catId: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus kategori ini? Semua item di dalam kategori ini juga akan terhapus.')) {
+      const updatedCats = subcategories.filter(c => c.id !== catId);
+      saveSubcategories(updatedCats);
+      
+      const updatedItems = items.filter(item => item.subcategory !== catId);
+      saveItems(updatedItems);
+      
+      if (selectedSub === catId) {
+        setSelectedSub(updatedCats[0]?.id || 'dds');
+      }
+      triggerWarning('Kategori & semua item di dalamnya berhasil dihapus.');
+    }
   };
 
   const handleResetToDefault = () => {
     if (confirm('Apakah Anda yakin ingin mengembalikan semua pricelist dan harga ke pengaturan default? Semua perubahan custom Anda akan hilang.')) {
       saveItems(INITIAL_ITEMS);
+      saveSubcategories(DEFAULT_SUBCATEGORIES);
+      saveServiceTypes(DEFAULT_SERVICE_TYPES);
+      setSelectedSub('dds');
     }
   };
 
   const isItemAvailable = (item: PricelistItem) => {
+    if (item.notAvailable) {
+      return false;
+    }
     if (item.subcategory === 'gamepass-reguler') {
       return isRegulerOpen;
     }
@@ -306,7 +590,13 @@ export default function App() {
 
   const addToCart = (item: PricelistItem) => {
     if (!isItemAvailable(item)) {
-      triggerWarning('GamePass DDS Reguler saat ini sedang TUTUP (Jam proses: 12:00 - 19:00 WIB). Silakan pilih GamePass DDS Kilat yang buka 24 jam!');
+      if (item.notAvailable) {
+        triggerWarning(`Layanan ${item.name} saat ini sedang tidak tersedia.`);
+      } else if (item.subcategory === 'gamepass-reguler') {
+        triggerWarning('GamePass DDS Reguler saat ini sedang TUTUP (Jam proses: 12:00 - 19:00 WIB). Silakan pilih GamePass DDS Kilat atau GamePass CDID yang buka!');
+      } else {
+        triggerWarning(`Layanan ${item.name} sedang tutup/tidak tersedia.`);
+      }
       return;
     }
     const existing = cart.find(c => c.item.id === item.id);
@@ -344,7 +634,7 @@ export default function App() {
   const totalPrice = cart.reduce((total, item) => total + (item.item.price * item.quantity), 0);
 
   // Filter items based on subcategory & search text
-  const getFilteredItems = (subcategory: 'dds' | 'cdid' | 'gamepass-reguler' | 'gamepass-kilat') => {
+  const getFilteredItems = (subcategory: string) => {
     return items.filter(item => 
       item.subcategory === subcategory && 
       item.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -357,11 +647,8 @@ export default function App() {
     msg += `📝 DAFTAR DETAIL PESANAN:\n`;
     
     cart.forEach((cartItem, idx) => {
-      let subName = '';
-      if (cartItem.item.subcategory === 'dds') subName = 'Drag Drive Simulator';
-      else if (cartItem.item.subcategory === 'cdid') subName = 'Car Driving Indonesia';
-      else if (cartItem.item.subcategory === 'gamepass-reguler') subName = 'GamePass DDS Reguler';
-      else if (cartItem.item.subcategory === 'gamepass-kilat') subName = 'GamePass DDS Kilat';
+      const foundCat = subcategories.find(c => c.id === cartItem.item.subcategory);
+      const subName = foundCat ? foundCat.name : cartItem.item.subcategory;
 
       msg += `${idx + 1}. [${subName}] ${cartItem.item.name} x${cartItem.quantity} - ${formatPrice(cartItem.item.price * cartItem.quantity)}\n`;
     });
@@ -379,7 +666,13 @@ export default function App() {
   // Click on "Pesan" button (direct order for single item)
   const handleDirectOrder = (item: PricelistItem) => {
     if (!isItemAvailable(item)) {
-      triggerWarning('GamePass DDS Reguler saat ini sedang TUTUP (Jam proses: 12:00 - 19:00 WIB). Silakan pilih GamePass DDS Kilat yang buka 24 jam!');
+      if (item.notAvailable) {
+        triggerWarning(`Layanan ${item.name} saat ini sedang tidak tersedia.`);
+      } else if (item.subcategory === 'gamepass-reguler') {
+        triggerWarning('GamePass DDS Reguler saat ini sedang TUTUP (Jam proses: 12:00 - 19:00 WIB). Silakan pilih GamePass DDS Kilat yang buka 24 jam!');
+      } else {
+        triggerWarning(`Layanan ${item.name} sedang tutup/tidak tersedia.`);
+      }
       return;
     }
     setCart([{ item, quantity: 1 }]);
@@ -407,6 +700,31 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative pb-20 selection:bg-cyan-500 selection:text-slate-950">
       
+      {/* ANNOUNCEMENT BANNER AT VERY TOP */}
+      {announcement && (
+        <div className="bg-gradient-to-r from-[#030712] via-[#0b1329] to-[#030712] border-b border-cyan-500/25 py-2 px-3 sm:px-4 relative z-50 text-center overflow-hidden shadow-md">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-xs">
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              <span className="flex items-center gap-1 text-[8px] sm:text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-cyan-400 text-slate-950 animate-pulse shrink-0">
+                <Megaphone className="w-2.5 h-2.5" />
+                <span>Info</span>
+              </span>
+              <span className="text-slate-200 font-bold tracking-wide text-center text-[10px] sm:text-xs">
+                {announcement}
+              </span>
+            </div>
+            {isPopupEnabled && popupMessage && (
+              <button
+                onClick={() => setShowPopup(true)}
+                className="text-[10px] text-cyan-400 font-black hover:text-cyan-300 cursor-pointer uppercase tracking-wider shrink-0 bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-800/30 hover:bg-cyan-900/60 transition"
+              >
+                Baca Detail &raquo;
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* PROFESSIONAL DECORATIVE LIGHT BLUE & DEEP BLUE GRADIENT GLOWS */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none z-0" />
       <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[140px] pointer-events-none z-0" />
@@ -462,6 +780,26 @@ export default function App() {
           </div>
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <button
+              onClick={() => {
+                setTempAnn(announcement);
+                setTempPopupTitle(popupTitle);
+                setTempPopupMsg(popupMessage);
+                setTempPopupEnabled(isPopupEnabled);
+                setIsAnnounceSettingsOpen(true);
+              }}
+              className="px-3 py-1.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800/40 text-cyan-300 font-black text-xs rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <Megaphone className="w-3.5 h-3.5" />
+              <span>Kelola Pengumuman</span>
+            </button>
+            <button
+              onClick={() => setIsManageCategoriesOpen(true)}
+              className="px-3 py-1.5 bg-blue-950 hover:bg-blue-900 border border-blue-800/40 text-blue-300 font-black text-xs rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <Gamepad2 className="w-3.5 h-3.5" />
+              <span>Kelola Kategori</span>
+            </button>
+            <button
               onClick={() => setIsAddItemModalOpen(true)}
               className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
             >
@@ -499,15 +837,11 @@ export default function App() {
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white mb-5 leading-tight">
-              Pricelist Roblox <br />
+              Selamat Datang Di <br />
               <span className="bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 bg-clip-text text-transparent">
-                Aman, Cepat & Legal!
+                Toko Entong
               </span>
             </h1>
-
-            <p className="text-slate-400 text-sm sm:text-base max-w-2xl mb-6 leading-relaxed">
-              Selamat datang di Sientong Store. Kami menyediakan jasa joki game Roblox (Drag Drive Simulator & Car Driving Indonesia) dengan jaminan koin instan amanah, serta gift gamepass reguler harga miring langsung masuk ke akun Anda.
-            </p>
 
             {/* Unique Benefit Highlights */}
             <div className="grid grid-cols-2 gap-3 w-full max-w-md mb-8">
@@ -620,31 +954,39 @@ export default function App() {
       {/* GAME CATEGORIES GRID CONTROL */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="mb-6">
-          <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400 mb-1">
-            PILIH KATEGORI LAYANAN
-          </h2>
+          <div className="flex justify-between items-center mb-1">
+            <h2 className="text-sm font-black uppercase tracking-widest text-cyan-400">
+              PILIH KATEGORI LAYANAN
+            </h2>
+          </div>
           <p className="text-xs text-slate-500">Klik salah satu game di bawah untuk melihat rincian paket harga joki atau gamepass.</p>
         </div>
 
-        {/* 6 column category list styled independently */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {[
-            { id: 'dds', name: 'Drag Drive Simulator', desc: 'Joki Roblox', icon: Flame, badge: 'Aman & Murah' },
-            { id: 'cdid', name: 'Car Driving Indonesia', desc: 'Joki Roblox', icon: Car, badge: 'Terlaris' },
-            { id: 'gamepass-reguler', name: 'GamePass DDS Reguler', desc: 'Gift In-Game', icon: Sparkles, badge: 'Proses 12-19' },
-            { id: 'gamepass-kilat', name: 'GamePass DDS Kilat', desc: 'Gift In-Game', icon: Zap, badge: 'Buka 24 Jam' },
-            { id: 'driving-empire', name: 'Driving Empire', desc: 'Joki Roblox', icon: Sliders, comingSoon: true },
-            { id: 'bus-explore', name: 'Bus Explore Indonesia', desc: 'Joki Roblox', icon: Bus, comingSoon: true }
-          ].map((cat) => {
-            const Icon = cat.icon;
+        {/* Dynamic category list styled independently */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
+          {subcategories.map((cat) => {
             const isSelected = selectedSub === cat.id;
+            
+            // Resolve icon dynamically
+            const getIcon = () => {
+              if (cat.icon && ICON_MAP[cat.icon]) return ICON_MAP[cat.icon];
+              if (cat.id === 'dds') return Flame;
+              if (cat.id === 'cdid') return Car;
+              if (cat.id === 'gamepass-reguler') return Sparkles;
+              if (cat.id === 'gamepass-kilat') return Zap;
+              if (cat.id === 'gamepass-cdid') return Star;
+              if (cat.id === 'driving-empire') return Sliders;
+              if (cat.id === 'bus-explore') return Bus;
+              return cat.category === 'joki' ? Gamepad2 : Sparkles;
+            };
+            const Icon = getIcon();
 
             return (
               <div
                 key={cat.id}
                 onClick={() => {
                   if (!cat.comingSoon) {
-                    setSelectedSub(cat.id as any);
+                    setSelectedSub(cat.id);
                   }
                 }}
                 className={`relative p-4 rounded-xl border transition-all flex flex-col justify-between cursor-pointer min-h-[110px] ${
@@ -688,134 +1030,259 @@ export default function App() {
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
             <h3 className="text-sm font-black text-white uppercase tracking-wider">
-              {selectedSub === 'dds' && 'Daftar Harga Drag Drive Simulator'}
-              {selectedSub === 'cdid' && 'Daftar Harga Car Driving Indonesia'}
-              {selectedSub === 'gamepass-reguler' && 'Daftar Harga GamePass DDS Reguler'}
-              {selectedSub === 'gamepass-kilat' && 'Daftar Harga GamePass DDS Kilat'}
+              {searchTerm.trim() ? (
+                <span>Hasil Pencarian Global</span>
+              ) : (
+                <>
+                  {`Daftar Harga ${subcategories.find(c => c.id === selectedSub)?.name || selectedSub}`}
+                </>
+              )}
             </h3>
           </div>
 
           <span className="text-xs text-slate-400">
-            Terbuka: <span className="text-cyan-400 font-bold">
-              {selectedSub === 'gamepass-reguler' || selectedSub === 'gamepass-kilat' ? 'Gift Sistem' : 'Joki Login'}
+            Sistem: <span className="text-cyan-400 font-bold">
+              {(() => {
+                const subCatObj = subcategories.find(c => c.id === selectedSub);
+                const sType = serviceTypes.find(t => t.id === subCatObj?.category);
+                if (sType) {
+                  return sType.id === 'joki' ? 'Joki Login' : sType.id === 'gift' ? 'Gift Sistem' : `${sType.name} Sistem`;
+                }
+                return 'Layanan Sistem';
+              })()}
             </span>
           </span>
         </div>
 
         {/* PRICE ITEMS CONTAINER */}
         <div>
-          {/* If the user clicks on driving-empire or bus-explore (which are coming soon, but disabled, so handled gracefully) */}
-          {(selectedSub as any) === 'driving-empire' || (selectedSub as any) === 'bus-explore' ? (
-            <div className="bg-[#0a0f1d] p-10 rounded-2xl border border-slate-900 text-center max-w-lg mx-auto">
-              <Clock className="w-8 h-8 text-cyan-400 mx-auto mb-3 animate-pulse" />
-              <h4 className="font-extrabold text-white text-sm mb-1 uppercase tracking-widest">Coming Soon!</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Pricelist joki untuk kategori game ini sedang dalam persiapan. Hubungi admin melalui instagram untuk mengajukan kustom request.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {getFilteredItems(selectedSub as any).map((item) => {
-                const available = isItemAvailable(item);
-                return (
-                  <div
-                    key={item.id}
-                    className={`bg-[#0a0f1d] border rounded-xl p-4 flex flex-col justify-between hover:border-cyan-500/30 hover:bg-slate-900/30 transition-all group ${
-                      item.popular ? 'border-cyan-500/20' : 'border-slate-900'
-                    } ${!available ? 'opacity-65 border-red-950/40' : ''}`}
-                  >
-                    {isAdmin && (
-                      <div className="flex justify-between items-center gap-2 mb-3 pb-2 border-b border-slate-900/60">
-                        <span className="text-[8px] text-slate-500 font-mono">ID: {item.id}</span>
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setEditingItem(item); setIsEditItemModalOpen(true); }}
-                            className="px-2 py-0.5 bg-slate-950 hover:bg-cyan-950 hover:text-cyan-400 text-slate-400 rounded border border-slate-800 text-[9px] font-black uppercase flex items-center gap-1 cursor-pointer"
-                          >
-                            <Edit2 className="w-2.5 h-2.5" />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
-                            className="px-2 py-0.5 bg-slate-950 hover:bg-red-950 hover:text-red-400 text-slate-400 rounded border border-slate-800 text-[9px] font-black uppercase flex items-center gap-1 cursor-pointer"
-                          >
-                            <Trash2 className="w-2.5 h-2.5" />
-                            <span>Hapus</span>
-                          </button>
+          {searchTerm.trim() ? (
+            <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {items
+                  .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                  .map((item) => {
+                    const available = isItemAvailable(item);
+                    return (
+                      <div
+                        key={item.id}
+                        className={`bg-[#0a0f1d] border rounded-xl p-4 flex flex-col justify-between hover:border-cyan-500/30 hover:bg-slate-900/30 transition-all group ${
+                          item.popular ? 'border-cyan-500/20' : 'border-slate-900'
+                        } ${!available ? 'opacity-65 border-red-950/40' : ''}`}
+                      >
+                        {isAdmin && (
+                          <div className="flex justify-between items-center gap-2 mb-3 pb-2 border-b border-slate-900/60">
+                            <span className="text-[8px] text-slate-500 font-mono">ID: {item.id}</span>
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setEditingItem(item); setIsEditItemModalOpen(true); }}
+                                className="px-2 py-0.5 bg-slate-950 hover:bg-cyan-950 hover:text-cyan-400 text-slate-400 rounded border border-slate-800 text-[9px] font-black uppercase flex items-center gap-1 cursor-pointer"
+                              >
+                                <Edit2 className="w-2.5 h-2.5" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
+                                className="px-2 py-0.5 bg-slate-950 hover:bg-red-950 hover:text-red-400 text-slate-400 rounded border border-slate-800 text-[9px] font-black uppercase flex items-center gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-2.5 h-2.5" />
+                                <span>Hapus</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <span className="text-[9px] text-slate-500 uppercase tracking-widest block mb-0.5">
+                              {item.subcategory === 'dds' 
+                                ? 'Drag Drive Simulator' 
+                                : item.subcategory === 'cdid' 
+                                ? 'Car Driving Indonesia' 
+                                : item.subcategory === 'gamepass-reguler'
+                                ? 'GamePass DDS Reguler'
+                                : item.subcategory === 'gamepass-kilat'
+                                ? 'GamePass DDS Kilat'
+                                : 'GamePass CDID'}
+                            </span>
+                            <h4 className={`font-extrabold text-sm sm:text-base transition-colors ${
+                              available ? 'text-slate-100 group-hover:text-cyan-400' : 'text-slate-400'
+                            }`}>
+                              {item.name}
+                            </h4>
+                          </div>
+
+                          {item.popular && available && (
+                            <span className="text-[8px] bg-cyan-950 text-cyan-400 border border-cyan-800/30 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                              Best Seller
+                            </span>
+                          )}
+
+                          {!available && (
+                            <span className="text-[8px] bg-red-950 text-red-400 border border-red-900/30 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                              Tidak Tersedia
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-950/60 flex items-center justify-between">
+                          <div>
+                            <span className="text-[9px] text-slate-500 uppercase tracking-widest block mb-0.5">Harga</span>
+                            {available ? (
+                              <span className="text-sm sm:text-base font-black text-cyan-400">
+                                {formatPrice(item.price)}
+                              </span>
+                            ) : (
+                              <span className="text-xs font-black text-red-400 uppercase tracking-wider">
+                                Tidak Tersedia
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex space-x-1.5">
+                            {available ? (
+                              <>
+                                <button
+                                  onClick={() => addToCart(item)}
+                                  className="p-2 bg-slate-950 text-slate-400 hover:text-cyan-400 rounded-lg hover:border-cyan-500/20 border border-slate-850 cursor-pointer"
+                                  title="Tambah ke Keranjang"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDirectOrder(item)}
+                                  className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:brightness-110 text-slate-950 font-extrabold text-xs rounded-lg cursor-pointer"
+                                >
+                                  Pesan
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-[10px] text-red-400 font-extrabold bg-red-950/30 px-2.5 py-1.5 rounded-lg border border-red-900/20 select-none">
+                                Tutup
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    )}
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <span className="text-[9px] text-slate-500 uppercase tracking-widest block mb-0.5">Paket Layanan</span>
-                        <h4 className={`font-extrabold text-sm sm:text-base transition-colors ${
-                          available ? 'text-slate-100 group-hover:text-cyan-400' : 'text-slate-400'
-                        }`}>
-                          {item.name}
-                        </h4>
-                      </div>
+                    );
+                  })}
+              </div>
 
-                      {item.popular && available && (
-                        <span className="text-[8px] bg-cyan-950 text-cyan-400 border border-cyan-800/30 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
-                          Best Seller
-                        </span>
-                      )}
-
-                      {!available && (
-                        <span className="text-[8px] bg-red-950 text-red-400 border border-red-900/30 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
-                          Tidak Tersedia
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t border-slate-950/60 flex items-center justify-between">
-                      <div>
-                        <span className="text-[9px] text-slate-500 uppercase tracking-widest block mb-0.5">Harga</span>
-                        {available ? (
-                          <span className="text-sm sm:text-base font-black text-cyan-400">
-                            {formatPrice(item.price)}
-                          </span>
-                        ) : (
-                          <span className="text-xs font-black text-red-400 uppercase tracking-wider">
-                            Tidak Tersedia
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex space-x-1.5">
-                        {available ? (
-                          <>
-                            <button
-                              onClick={() => addToCart(item)}
-                              className="p-2 bg-slate-950 text-slate-400 hover:text-cyan-400 rounded-lg hover:border-cyan-500/20 border border-slate-850 cursor-pointer"
-                              title="Tambah ke Keranjang"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDirectOrder(item)}
-                              className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:brightness-110 text-slate-950 font-extrabold text-xs rounded-lg cursor-pointer"
-                            >
-                              Pesan
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-[10px] text-red-400 font-extrabold bg-red-950/30 px-2.5 py-1.5 rounded-lg border border-red-900/20 select-none">
-                            Tutup (12:00 - 19:00 WIB)
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {getFilteredItems(selectedSub as any).length === 0 && (
+              {items.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
                 <div className="col-span-3 text-center py-10 bg-[#0a0f1d] rounded-xl border border-slate-900">
                   <p className="text-slate-500 text-xs">Tidak ada item yang cocok dengan pencarian "{searchTerm}".</p>
                 </div>
               )}
             </div>
+          ) : (
+            <>
+              {/* If the user clicks on a category that is marked as coming soon, handle gracefully */}
+              {subcategories.find(c => c.id === selectedSub)?.comingSoon ? (
+                <div className="bg-[#0a0f1d] p-10 rounded-2xl border border-slate-900 text-center max-w-lg mx-auto">
+                  <Clock className="w-8 h-8 text-cyan-400 mx-auto mb-3 animate-pulse" />
+                  <h4 className="font-extrabold text-white text-sm mb-1 uppercase tracking-widest">Coming Soon!</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Pricelist joki untuk kategori game ini sedang dalam persiapan. Hubungi admin melalui instagram untuk mengajukan kustom request.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {getFilteredItems(selectedSub as any).map((item) => {
+                    const available = isItemAvailable(item);
+                    return (
+                      <div
+                        key={item.id}
+                        className={`bg-[#0a0f1d] border rounded-xl p-4 flex flex-col justify-between hover:border-cyan-500/30 hover:bg-slate-900/30 transition-all group ${
+                          item.popular ? 'border-cyan-500/20' : 'border-slate-900'
+                        } ${!available ? 'opacity-65 border-red-950/40' : ''}`}
+                      >
+                        {isAdmin && (
+                          <div className="flex justify-between items-center gap-2 mb-3 pb-2 border-b border-slate-900/60">
+                            <span className="text-[8px] text-slate-500 font-mono">ID: {item.id}</span>
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setEditingItem(item); setIsEditItemModalOpen(true); }}
+                                className="px-2 py-0.5 bg-slate-950 hover:bg-cyan-950 hover:text-cyan-400 text-slate-400 rounded border border-slate-800 text-[9px] font-black uppercase flex items-center gap-1 cursor-pointer"
+                              >
+                                <Edit2 className="w-2.5 h-2.5" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id); }}
+                                className="px-2 py-0.5 bg-slate-950 hover:bg-red-950 hover:text-red-400 text-slate-400 rounded border border-slate-800 text-[9px] font-black uppercase flex items-center gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-2.5 h-2.5" />
+                                <span>Hapus</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <span className="text-[9px] text-slate-500 uppercase tracking-widest block mb-0.5">Paket Layanan</span>
+                            <h4 className={`font-extrabold text-sm sm:text-base transition-colors ${
+                              available ? 'text-slate-100 group-hover:text-cyan-400' : 'text-slate-400'
+                            }`}>
+                              {item.name}
+                            </h4>
+                          </div>
+
+                          {item.popular && available && (
+                            <span className="text-[8px] bg-cyan-950 text-cyan-400 border border-cyan-800/30 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                              Best Seller
+                            </span>
+                          )}
+
+                          {!available && (
+                            <span className="text-[8px] bg-red-950 text-red-400 border border-red-900/30 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                              Tidak Tersedia
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-950/60 flex items-center justify-between">
+                          <div>
+                            <span className="text-[9px] text-slate-500 uppercase tracking-widest block mb-0.5">Harga</span>
+                            {available ? (
+                              <span className="text-sm sm:text-base font-black text-cyan-400">
+                                {formatPrice(item.price)}
+                              </span>
+                            ) : (
+                              <span className="text-xs font-black text-red-400 uppercase tracking-wider">
+                                Tidak Tersedia
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex space-x-1.5">
+                            {available ? (
+                              <>
+                                <button
+                                  onClick={() => addToCart(item)}
+                                  className="p-2 bg-slate-950 text-slate-400 hover:text-cyan-400 rounded-lg hover:border-cyan-500/20 border border-slate-850 cursor-pointer"
+                                  title="Tambah ke Keranjang"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDirectOrder(item)}
+                                  className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:brightness-110 text-slate-950 font-extrabold text-xs rounded-lg cursor-pointer"
+                                >
+                                  Pesan
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-[10px] text-red-400 font-extrabold bg-red-950/30 px-2.5 py-1.5 rounded-lg border border-red-900/20 select-none">
+                                Tutup {item.subcategory === 'gamepass-reguler' ? '(12:00 - 19:00 WIB)' : ''}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -865,14 +1332,17 @@ export default function App() {
 
       {/* FOOTER GENERAL DESIGN COLOFON */}
       <footer className="text-center text-[9px] uppercase tracking-[0.2em] py-12 mt-16 border-t border-slate-900/60 flex flex-col items-center gap-2">
-        <span className="opacity-45">© 2026 SIENTONG STORE — AMAN, CEPAT DAN TERPERCAYA • POWERED BY SIENTONG.ID</span>
-        <button
-          onClick={() => setIsAdminModalOpen(true)}
-          className="text-slate-500 hover:text-cyan-400 font-bold transition-all flex items-center gap-1 mt-1 uppercase text-[8px] cursor-pointer"
-        >
-          <Lock className="w-2.5 h-2.5 text-slate-600" />
-          <span>Admin Portal</span>
-        </button>
+        <span className="opacity-45 select-none">
+          © 2026 SIENTONG STORE — AMAN, CEPAT DAN TERPERCAYA{' '}
+          <span
+            onClick={() => setIsAdminModalOpen(true)}
+            className="cursor-pointer hover:text-cyan-400 hover:scale-125 transition-all inline-block font-extrabold px-1 text-slate-500"
+            title="Admin Login"
+          >
+            •
+          </span>{' '}
+          POWERED BY SIENTONG.ID
+        </span>
       </footer>
 
       {/* SHOPPING CART DRAWERS (SIDE SHEET) */}
@@ -1265,12 +1735,13 @@ export default function App() {
                     Kategori Utama
                   </label>
                   <select
-                    value={newItem.category || 'gift'}
-                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value as any })}
+                    value={newItem.category || (serviceTypes[0]?.id || '')}
+                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
                     className="w-full p-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none"
                   >
-                    <option value="joki">Joki</option>
-                    <option value="gift">Gift</option>
+                    {serviceTypes.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -1278,29 +1749,45 @@ export default function App() {
                     Subkategori Game
                   </label>
                   <select
-                    value={newItem.subcategory || 'gamepass-kilat'}
-                    onChange={(e) => setNewItem({ ...newItem, subcategory: e.target.value as any })}
+                    value={newItem.subcategory || (subcategories[0]?.id || '')}
+                    onChange={(e) => setNewItem({ ...newItem, subcategory: e.target.value })}
                     className="w-full p-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none"
                   >
-                    <option value="dds">Roblox DDS (Joki)</option>
-                    <option value="cdid">Roblox CDID (Joki)</option>
-                    <option value="gamepass-reguler">DDS Gamepass Reguler</option>
-                    <option value="gamepass-kilat">DDS Gamepass Kilat</option>
+                    {subcategories.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name} ({cat.category === 'joki' ? 'Joki' : 'Gift'})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="newPopular"
-                  checked={!!newItem.popular}
-                  onChange={(e) => setNewItem({ ...newItem, popular: e.target.checked })}
-                  className="w-4 h-4 accent-cyan-500 rounded bg-slate-950 border-slate-800"
-                />
-                <label htmlFor="newPopular" className="text-xs text-slate-400 font-bold cursor-pointer">
-                  Tandai sebagai Best Seller / Terlaris
-                </label>
+              <div className="flex flex-col gap-2.5 pt-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="newPopular"
+                    checked={!!newItem.popular}
+                    onChange={(e) => setNewItem({ ...newItem, popular: e.target.checked })}
+                    className="w-4 h-4 accent-cyan-500 rounded bg-slate-950 border-slate-800"
+                  />
+                  <label htmlFor="newPopular" className="text-xs text-slate-400 font-bold cursor-pointer">
+                    Tandai sebagai Best Seller / Terlaris
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="newNotAvailable"
+                    checked={!!newItem.notAvailable}
+                    onChange={(e) => setNewItem({ ...newItem, notAvailable: e.target.checked })}
+                    className="w-4 h-4 accent-red-500 rounded bg-slate-950 border-slate-800"
+                  />
+                  <label htmlFor="newNotAvailable" className="text-xs text-slate-400 font-bold cursor-pointer">
+                    Tandai sebagai Tidak Tersedia (Sold Out / Tutup)
+                  </label>
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">
@@ -1373,11 +1860,12 @@ export default function App() {
                   </label>
                   <select
                     value={editingItem.category}
-                    onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value as any })}
+                    onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
                     className="w-full p-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none"
                   >
-                    <option value="joki">Joki</option>
-                    <option value="gift">Gift</option>
+                    {serviceTypes.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -1386,28 +1874,44 @@ export default function App() {
                   </label>
                   <select
                     value={editingItem.subcategory}
-                    onChange={(e) => setEditingItem({ ...editingItem, subcategory: e.target.value as any })}
+                    onChange={(e) => setEditingItem({ ...editingItem, subcategory: e.target.value })}
                     className="w-full p-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none"
                   >
-                    <option value="dds">Roblox DDS (Joki)</option>
-                    <option value="cdid">Roblox CDID (Joki)</option>
-                    <option value="gamepass-reguler">DDS Gamepass Reguler</option>
-                    <option value="gamepass-kilat">DDS Gamepass Kilat</option>
+                    {subcategories.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name} ({cat.category === 'joki' ? 'Joki' : 'Gift'})
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="editPopular"
-                  checked={!!editingItem.popular}
-                  onChange={(e) => setEditingItem({ ...editingItem, popular: e.target.checked })}
-                  className="w-4 h-4 accent-cyan-500 rounded bg-slate-950 border-slate-800"
-                />
-                <label htmlFor="editPopular" className="text-xs text-slate-400 font-bold cursor-pointer">
-                  Tandai sebagai Best Seller / Terlaris
-                </label>
+              <div className="flex flex-col gap-2.5 pt-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="editPopular"
+                    checked={!!editingItem.popular}
+                    onChange={(e) => setEditingItem({ ...editingItem, popular: e.target.checked })}
+                    className="w-4 h-4 accent-cyan-500 rounded bg-slate-950 border-slate-800"
+                  />
+                  <label htmlFor="editPopular" className="text-xs text-slate-400 font-bold cursor-pointer">
+                    Tandai sebagai Best Seller / Terlaris
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="editNotAvailable"
+                    checked={!!editingItem.notAvailable}
+                    onChange={(e) => setEditingItem({ ...editingItem, notAvailable: e.target.checked })}
+                    className="w-4 h-4 accent-red-500 rounded bg-slate-950 border-slate-800"
+                  />
+                  <label htmlFor="editNotAvailable" className="text-xs text-slate-400 font-bold cursor-pointer">
+                    Tandai sebagai Tidak Tersedia (Sold Out / Tutup)
+                  </label>
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">
@@ -1426,6 +1930,597 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* KELOLA PENGUMUMAN ADMIN MODAL */}
+      {isAnnounceSettingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans animate-fade-in" role="dialog" aria-modal="true">
+          <div onClick={() => setIsAnnounceSettingsOpen(false)} className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm" />
+          <div className="relative bg-[#0b0f1a] border border-blue-900/30 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4 max-h-[95vh] overflow-y-auto">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-900">
+              <Megaphone className="w-5 h-5 text-cyan-400" />
+              <h3 className="font-extrabold text-white text-sm uppercase tracking-wider">Kelola Pengumuman & Popup</h3>
+            </div>
+
+            <form onSubmit={handleSaveAnnounceSettings} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Teks Banner Pengumuman Atas (Kosongkan jika ingin disembunyikan)
+                </label>
+                <textarea
+                  placeholder="Ketik teks pengumuman yang muncul di paling atas..."
+                  value={tempAnn}
+                  onChange={(e) => setTempAnn(e.target.value)}
+                  rows={2}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-cyan-400 resize-none"
+                />
+              </div>
+
+              <div className="border-t border-slate-900/60 pt-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <input
+                    type="checkbox"
+                    id="tempPopupEnabled"
+                    checked={tempPopupEnabled}
+                    onChange={(e) => setTempPopupEnabled(e.target.checked)}
+                    className="w-4 h-4 accent-cyan-500 rounded bg-slate-950 border-slate-800"
+                  />
+                  <label htmlFor="tempPopupEnabled" className="text-xs text-slate-300 font-bold cursor-pointer">
+                    Aktifkan Popup Selamat Datang / Informasi Detail
+                  </label>
+                </div>
+
+                {tempPopupEnabled && (
+                  <div className="space-y-3 pl-1">
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">
+                        Judul Popup Informasi
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Contoh: PENGUMUMAN PENTING SIENTONG..."
+                        value={tempPopupTitle}
+                        onChange={(e) => setTempPopupTitle(e.target.value)}
+                        className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">
+                        Isi Pesan Popup Detail
+                      </label>
+                      <textarea
+                        placeholder="Ketik detail isi informasi pengumuman..."
+                        value={tempPopupMsg}
+                        onChange={(e) => setTempPopupMsg(e.target.value)}
+                        rows={4}
+                        className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-cyan-400 resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t border-slate-900/60">
+                <button
+                  type="button"
+                  onClick={() => setIsAnnounceSettingsOpen(false)}
+                  className="w-1/2 py-2.5 bg-slate-950 border border-slate-850 text-xs font-bold rounded-xl text-slate-400 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 text-xs font-extrabold rounded-xl shadow-md cursor-pointer text-center"
+                >
+                  Simpan Pengumuman
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADMIN KATEGORI MANAGEMENT MODAL */}
+      {isManageCategoriesOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans animate-fade-in" role="dialog" aria-modal="true">
+          <div onClick={() => { setIsManageCategoriesOpen(false); setEditingCategory(null); }} className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm" />
+          <div className="relative bg-[#0b0f1a] border border-blue-900/30 w-full max-w-2xl rounded-2xl shadow-2xl p-6 space-y-4 max-h-[95vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-900">
+              <div className="flex items-center gap-2">
+                <Gamepad2 className="w-5 h-5 text-blue-400" />
+                <h3 className="font-extrabold text-white text-sm uppercase tracking-wider">Kelola Kategori Game</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setIsManageCategoriesOpen(false);
+                  setEditingCategory(null);
+                }}
+                className="text-slate-500 hover:text-white p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">
+              {/* LEFT COLUMN: ADD / EDIT CATEGORY FORM */}
+              <div className="space-y-4 bg-slate-900/30 p-4 rounded-xl border border-slate-900">
+                <h4 className="font-black text-white uppercase tracking-wider text-xs pb-1 border-b border-slate-900">
+                  {editingCategory ? 'Edit Kategori' : 'Tambah Kategori Baru'}
+                </h4>
+                
+                {editingCategory ? (
+                  <form onSubmit={handleSaveEditedCategory} className="space-y-3">
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                        ID Kategori (Unique & Locked)
+                      </label>
+                      <input
+                        type="text"
+                        disabled
+                        value={editingCategory.id}
+                        className="w-full px-3 py-1.5 bg-slate-950/60 border border-slate-900 rounded-lg text-slate-500 cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                        Nama Kategori
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingCategory.name}
+                        onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                        Deskripsi Singkat (misal: Joki Roblox, Gift In-Game)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingCategory.desc}
+                        onChange={(e) => setEditingCategory({ ...editingCategory, desc: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                        Badge (misal: Terlaris, Proses 12-19)
+                      </label>
+                      <input
+                        type="text"
+                        value={editingCategory.badge}
+                        onChange={(e) => setEditingCategory({ ...editingCategory, badge: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                          Tipe Layanan
+                        </label>
+                        <select
+                          value={editingCategory.category}
+                          onChange={(e) => setEditingCategory({ ...editingCategory, category: e.target.value })}
+                          className="w-full p-1.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-300 focus:outline-none"
+                        >
+                          {serviceTypes.map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2 pt-4">
+                        <input
+                          type="checkbox"
+                          id="editCatComingSoon"
+                          checked={!!editingCategory.comingSoon}
+                          onChange={(e) => setEditingCategory({ ...editingCategory, comingSoon: e.target.checked })}
+                          className="w-4 h-4 accent-cyan-500 rounded bg-slate-950"
+                        />
+                        <label htmlFor="editCatComingSoon" className="font-bold text-slate-400 cursor-pointer text-[10px] uppercase">
+                          Coming Soon
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">
+                        Pilih Icon Kategori (Mood & Tema)
+                      </label>
+                      <div className="grid grid-cols-5 gap-1.5 p-2 bg-slate-950 rounded-xl border border-slate-900 max-h-[110px] overflow-y-auto">
+                        {ICON_TEMPLATES.map((item) => {
+                          const IconComp = ICON_MAP[item.id] || Sparkles;
+                          const isSel = (editingCategory.icon || 'flame') === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => setEditingCategory({ ...editingCategory, icon: item.id })}
+                              title={item.label}
+                              className={`p-1.5 rounded-lg border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                                isSel
+                                  ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400 font-bold'
+                                  : 'bg-slate-900/50 border-slate-950 hover:bg-slate-900 hover:border-slate-800 text-slate-400'
+                              }`}
+                            >
+                              <IconComp className="w-4 h-4" />
+                              <span className="text-[7px] mt-1 truncate max-w-full font-semibold">{item.id}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingCategory(null)}
+                        className="w-1/2 py-2 bg-slate-950 border border-slate-855 rounded-xl text-slate-400 font-bold"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        className="w-1/2 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-slate-950 font-extrabold rounded-xl"
+                      >
+                        Simpan
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={handleAddNewCategory} className="space-y-3">
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                        ID Kategori (misal: gamepass-cdid-baru)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ketik ID unik..."
+                        value={newCategory.id || ''}
+                        onChange={(e) => setNewCategory({ ...newCategory, id: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                        Nama Kategori (misal: GamePass CDID Baru)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Nama tampilan game..."
+                        value={newCategory.name || ''}
+                        onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                        Deskripsi Singkat (misal: Joki Roblox, Gift In-Game)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Deskripsi..."
+                        value={newCategory.desc || ''}
+                        onChange={(e) => setNewCategory({ ...newCategory, desc: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                        Badge (misal: Terlaris, Proses 12-19)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Aman & Murah..."
+                        value={newCategory.badge || ''}
+                        onChange={(e) => setNewCategory({ ...newCategory, badge: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                          Tipe Layanan
+                        </label>
+                        <select
+                          value={newCategory.category || (serviceTypes[0]?.id || 'joki')}
+                          onChange={(e) => setNewCategory({ ...newCategory, category: e.target.value })}
+                          className="w-full p-1.5 bg-slate-950 border border-slate-800 rounded-lg text-slate-300 focus:outline-none"
+                        >
+                          {serviceTypes.map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2 pt-4">
+                        <input
+                          type="checkbox"
+                          id="newCatComingSoon"
+                          checked={!!newCategory.comingSoon}
+                          onChange={(e) => setNewCategory({ ...newCategory, comingSoon: e.target.checked })}
+                          className="w-4 h-4 accent-cyan-500 rounded bg-slate-950"
+                        />
+                        <label htmlFor="newCatComingSoon" className="font-bold text-slate-400 cursor-pointer text-[10px] uppercase">
+                          Coming Soon
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1.5">
+                        Pilih Icon Kategori (Mood & Tema)
+                      </label>
+                      <div className="grid grid-cols-5 gap-1.5 p-2 bg-slate-950 rounded-xl border border-slate-900 max-h-[110px] overflow-y-auto">
+                        {ICON_TEMPLATES.map((item) => {
+                          const IconComp = ICON_MAP[item.id] || Sparkles;
+                          const isSel = (newCategory.icon || 'flame') === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => setNewCategory({ ...newCategory, icon: item.id })}
+                              title={item.label}
+                              className={`p-1.5 rounded-lg border flex flex-col items-center justify-center transition-all cursor-pointer ${
+                                isSel
+                                  ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400 font-bold'
+                                  : 'bg-slate-900/50 border-slate-950 hover:bg-slate-900 hover:border-slate-800 text-slate-400'
+                              }`}
+                            >
+                              <IconComp className="w-4 h-4" />
+                              <span className="text-[7px] mt-1 truncate max-w-full font-semibold">{item.id}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-black rounded-xl cursor-pointer"
+                    >
+                      Tambah Kategori
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              {/* RIGHT COLUMN: LIST OF CATEGORIES OR SERVICE TYPES */}
+              <div className="space-y-4 flex flex-col h-full min-h-[350px]">
+                {/* TAB SWITCHER */}
+                <div className="flex border-b border-slate-900 pb-1 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAdminCatTab('categories')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg font-bold text-[11px] uppercase tracking-wider transition ${
+                      adminCatTab === 'categories' 
+                        ? 'bg-blue-950 text-blue-400 border border-blue-900/40' 
+                        : 'text-slate-400 hover:text-white bg-slate-950/20'
+                    }`}
+                  >
+                    Daftar Kategori
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdminCatTab('servicetypes')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg font-bold text-[11px] uppercase tracking-wider transition ${
+                      adminCatTab === 'servicetypes' 
+                        ? 'bg-blue-950 text-blue-400 border border-blue-900/40' 
+                        : 'text-slate-400 hover:text-white bg-slate-950/20'
+                    }`}
+                  >
+                    Tipe Layanan ({serviceTypes.length})
+                  </button>
+                </div>
+
+                {adminCatTab === 'categories' ? (
+                  <div className="space-y-3 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h4 className="font-black text-white uppercase tracking-wider text-[10px] pb-1.5 text-slate-400">
+                        Daftar Kategori Terdaftar
+                      </h4>
+                      <div className="space-y-2.5 max-h-[330px] overflow-y-auto pr-1">
+                        {subcategories.map(cat => {
+                          const IconComponent = ICON_MAP[cat.icon || 'flame'] || Sparkles;
+                          return (
+                            <div 
+                              key={cat.id} 
+                              className="p-3 bg-slate-950/60 rounded-xl border border-slate-900 flex justify-between items-center"
+                            >
+                              <div className="min-w-0 flex-1 pr-2">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <div className="p-1 rounded bg-slate-900 border border-slate-800 text-cyan-400 shrink-0">
+                                    <IconComponent className="w-3 h-3" />
+                                  </div>
+                                  <span className="font-bold text-slate-100 text-xs truncate">{cat.name}</span>
+                                  <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${
+                                    cat.category === 'joki' 
+                                      ? 'bg-indigo-950/80 text-indigo-400 border border-indigo-900/30' 
+                                      : cat.category === 'gift' 
+                                      ? 'bg-pink-950/80 text-pink-400 border border-pink-900/30' 
+                                      : 'bg-cyan-950/80 text-cyan-400 border border-cyan-900/30'
+                                  }`}>
+                                    {serviceTypes.find(t => t.id === cat.category)?.name || cat.category}
+                                  </span>
+                                  {cat.comingSoon && (
+                                    <span className="text-[8px] px-1 py-0.2 rounded font-black bg-slate-900 text-slate-500 uppercase">
+                                      Soon
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-slate-500 mt-0.5 truncate">
+                                  ID: <span className="font-mono text-cyan-400">{cat.id}</span> • {cat.desc}
+                                </p>
+                              </div>
+
+                            <div className="flex gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setEditingCategory(cat)}
+                                className="px-2 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 text-[10px] font-bold"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCategory(cat.id)}
+                                className="px-2 py-1 bg-slate-950 hover:bg-red-950 hover:text-red-400 text-slate-500 rounded border border-slate-900 text-[10px] font-bold"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 flex-1 flex flex-col justify-between">
+                    {/* ADD NEW SERVICE TYPE FORM */}
+                    <form onSubmit={handleAddNewServiceType} className="p-3 bg-slate-950/40 rounded-xl border border-slate-900 space-y-2.5">
+                      <h5 className="font-black text-white uppercase tracking-wider text-[10px] text-slate-300">
+                        Tambah Tipe Layanan Baru
+                      </h5>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                            ID Tipe (misal: topup)
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="topup, akun, dll"
+                            value={newServiceType.id || ''}
+                            onChange={(e) => setNewServiceType({ ...newServiceType, id: e.target.value })}
+                            className="w-full px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none animate-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[8px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">
+                            Nama Tipe (misal: Top Up)
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Top Up, Jasa Akun"
+                            value={newServiceType.name || ''}
+                            onChange={(e) => setNewServiceType({ ...newServiceType, name: e.target.value })}
+                            className="w-full px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-slate-200 focus:outline-none animate-none"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full py-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-slate-950 font-black rounded-lg text-[10px] uppercase tracking-wider"
+                      >
+                        Tambah Tipe Layanan
+                      </button>
+                    </form>
+
+                    {/* SERVICE TYPES LIST */}
+                    <div>
+                      <h4 className="font-black text-white uppercase tracking-wider text-[10px] pb-1 text-slate-400">
+                        Daftar Tipe Layanan Saat Ini
+                      </h4>
+                      <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                        {serviceTypes.map(t => (
+                          <div 
+                            key={t.id} 
+                            className="p-2.5 bg-slate-950/60 rounded-xl border border-slate-900 flex justify-between items-center text-xs"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <span className="font-bold text-slate-100">{t.name}</span>
+                              <p className="text-[9px] text-slate-500">
+                                ID: <span className="font-mono text-cyan-400">{t.id}</span>
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteServiceType(t.id)}
+                              disabled={t.id === 'joki' || t.id === 'gift'}
+                              className={`px-2 py-1 rounded text-[9px] font-bold ${
+                                t.id === 'joki' || t.id === 'gift'
+                                  ? 'bg-slate-950 text-slate-700 cursor-not-allowed border border-slate-950'
+                                  : 'bg-slate-950 hover:bg-red-950 hover:text-red-400 text-slate-500 border border-slate-900'
+                              }`}
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-900/60 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsManageCategoriesOpen(false);
+                  setEditingCategory(null);
+                }}
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-850 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl cursor-pointer"
+              >
+                Selesai
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOMER READABLE POPUP DETAIL MODAL */}
+      {showPopup && isPopupEnabled && popupMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans animate-fade-in" role="dialog" aria-modal="true">
+          <div 
+            onClick={() => {
+              setShowPopup(false);
+              sessionStorage.setItem('sientong_popup_closed', 'true');
+            }} 
+            className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm" 
+          />
+          <div className="relative bg-[#0c1224] border border-blue-900/30 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-900">
+              <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-cyan-400 animate-bounce" />
+                <h3 className="font-extrabold text-white text-sm uppercase tracking-wider">{popupTitle}</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPopup(false);
+                  sessionStorage.setItem('sientong_popup_closed', 'true');
+                }}
+                className="text-slate-500 hover:text-white p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto pr-1">
+              {popupMessage}
+            </div>
+
+            <div className="pt-2 border-t border-slate-900 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPopup(false);
+                  sessionStorage.setItem('sientong_popup_closed', 'true');
+                }}
+                className="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:brightness-110 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg"
+              >
+                Saya Mengerti
+              </button>
+            </div>
           </div>
         </div>
       )}
