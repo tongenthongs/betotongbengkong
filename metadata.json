@@ -1,6 +1,0 @@
-{
-  "name": "Sientong Store",
-  "description": "Website pricelist resmi Sientong Store untuk Joki Roblox (Drag Drive Simulator, CDID) dan Gift In Game.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
